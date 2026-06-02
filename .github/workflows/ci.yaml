@@ -1,20 +1,7 @@
 name: CI-CD
 
 # =============================================================================
-# ngo-service (Python/Flask) — mesmo padrão do flag-service (fase 03/04).
-# Repositório próprio: github.event.repository.name == "ngo-service".
-#
-# Diferenças em relação ao flag-service (e POR QUÊ):
-#   1. ECR_REPOSITORY usa o prefixo "solidarytech" (e não "togglemaster").
-#      Motivo: a infra Terraform da fase 5 cria o ECR como solidarytech/<service>.
-#   2. Dependências de teste vêm de requirements-dev.txt (este repo usa esse
-#      arquivo; o flag-service procurava requirements-test.txt).
-#   3. flake8 no padrão de CI: FALHA só em erro real (E9/F63/F7/F82) e reporta
-#      estilo como aviso (não bloqueia). Motivo: o código tem nits cosméticos
-#      (E501 etc.) que, com o flake8 estrito do flag-service, reprovariam o job.
-#
-# Observação: o ECR é IMMUTABLE. Re-rodar o workflow no MESMO commit (mesmo SHA)
-# faz o push falhar (tag já existe). No fluxo normal cada commit gera 1 push.
+# ngo-service (Python/Flask)
 # =============================================================================
 
 on:
@@ -54,10 +41,10 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -89,7 +76,7 @@ jobs:
 
       - name: Publicar relatório de cobertura
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage-report
           path: coverage.xml
@@ -105,10 +92,10 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -139,10 +126,10 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -161,7 +148,7 @@ jobs:
 
       - name: Scan de filesystem com Trivy (SARIF)
         if: always()
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
           scan-type: fs
@@ -173,7 +160,7 @@ jobs:
 
       - name: Scan de filesystem com Trivy (table legível)
         if: always()
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
           scan-type: fs
@@ -192,7 +179,7 @@ jobs:
 
       - name: Upload Trivy filesystem reports (artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trivy-fs-report-${{ github.run_number }}
           path: |
@@ -210,13 +197,13 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar cache Docker (Buildx)
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build da imagem Docker (com cache)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           tags: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -226,7 +213,7 @@ jobs:
 
       - name: Scan da imagem com Trivy (SARIF)
         if: always()
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
           image-ref: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -237,7 +224,7 @@ jobs:
 
       - name: Scan da imagem com Trivy (table legível)
         if: always()
-        uses: aquasecurity/trivy-action@v0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           version: ${{ env.TRIVY_VERSION }}
           image-ref: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
@@ -255,7 +242,7 @@ jobs:
 
       - name: Upload Trivy image reports (artifact)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: trivy-image-report-${{ github.run_number }}
           path: |
@@ -276,10 +263,10 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar credenciais AWS
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -291,10 +278,10 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configurar Buildx (reusa cache)
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build e push da imagem para ECR
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
